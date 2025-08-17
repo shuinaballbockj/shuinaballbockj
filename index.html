@@ -36,6 +36,7 @@
 
       try {
         const user = await Backendless.UserService.login(email, password, true);
+        alert("Login: " + user.email);
         loggedInEmail = user.email;  // store the logged-in email
         localStorage.setItem("userEmail", loggedInEmail);
 
