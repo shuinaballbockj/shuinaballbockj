@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login + PayPal Checkout</title>
+  <script src="https://cdn.backendless.com/sdk/js/latest/backendless.min.js"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=YOUR_PAYPAL_CLIENT_ID"></script>
+</head>
+<body>
+  <h1>Login + PayPal Checkout</h1>
+
+  <!-- Login Form -->
+  <div id="login-section">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="password" id="password" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <!-- PayPal Section (hidden until login) -->
+  <div id="paypal-section" style="display:none;">
+    <h2>Checkout</h2>
+    <div id="paypal-button-container"></div>
+  </div>
+
+  <script>
+    // Initialize Backendless
+    // Bouncy
+    Backendless.initApp("FF55A111-06AF-7EB1-FFDE-B5B62760CA00", "C1E76A66-370C-4491-B48E-57AC3520FCA7");
+
+    let loggedInEmail = null;
+
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const user = await Backendless.UserService.login(email, password, true);
+        loggedInEmail = user.email;  // store the logged-in email
+        localStorage.setItem("userEmail", loggedInEmail);
+
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("paypal-section").style.display = "block";
+
+        renderPayPalButton(); // load PayPal after login
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
+    }
+
+    function renderPayPalButton() {
+      paypal.Buttons({
+        createOrder: function(data, actions) {
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                value: "33.00" // product price
+              },
+              custom_id: loggedInEmail  // 👈 tag with logged-in email
+            }]
+          });
+        },
+        onApprove: function(data, actions) {
+          return actions.order.capture().then(function(details) {
+            alert("Payment successful! Thank you " + details.payer.name.given_name);
+
+            // Optional: notify your Backendless backend immediately
+            
+            /*fetch("https://YOUR_BACKENDLESS_API/payment-complete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderID: data.orderID,
+                email: loggedInEmail
+              })
+              */
+            });
+          });
+        }
+        //after onApprove:
+      }).render('#paypal-button-container');
+    }
+  </script>
+</body>
+</html>
